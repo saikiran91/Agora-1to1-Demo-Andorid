@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -13,7 +14,10 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import java.io.File;
 
 import io.agora.rtc.Constants;
 import io.agora.rtc.IRtcEngineEventHandler;
@@ -23,6 +27,9 @@ import io.agora.rtc.video.VideoCanvas;
 public class VideoChatViewActivity extends AppCompatActivity {
 
     private static final String LOG_TAG = VideoChatViewActivity.class.getSimpleName();
+    public static final String CHANNEL_ID_KEY = "CHANNEL_ID_KEY";
+    private String mChannelID;
+
 
     private static final int PERMISSION_REQ_ID_RECORD_AUDIO = 22;
     private static final int PERMISSION_REQ_ID_CAMERA = PERMISSION_REQ_ID_RECORD_AUDIO + 1;
@@ -45,6 +52,9 @@ public class VideoChatViewActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     onRemoteUserLeft();
+                    TextView detailsTv = findViewById(R.id.remote_detail_tv);
+                    detailsTv.setText("");
+                    detailsTv.setVisibility(View.GONE);
                 }
             });
         }
@@ -68,13 +78,38 @@ public class VideoChatViewActivity extends AppCompatActivity {
         public void onUserEnableLocalVideo(int uid, boolean enabled) {
             super.onUserEnableLocalVideo(uid, enabled);
         }
+
+        @Override
+        public void onRemoteVideoStats(final RemoteVideoStats stats) {
+            super.onRemoteVideoStats(stats);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TextView detailsTv = findViewById(R.id.remote_detail_tv);
+                    detailsTv.setVisibility(View.VISIBLE);
+                    String details = "Res: " + stats.width + "w " + stats.height + "h" + "\n" +
+                            "Bitrate: " + stats.receivedBitrate + "\n" +
+                            "FrameRate: " + stats.receivedFrameRate + "\n" +
+                            "uid: " + stats.uid + "\n" +
+                            "delay: " + stats.delay + "\n" +
+                            "StreamType: " + stats.rxStreamType + "\n" +
+                            "Channel ID:" + mChannelID;
+                    detailsTv.setText(details);
+                }
+            });
+
+        }
+
+
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat_view);
-
+        mChannelID = getIntent().getStringExtra(CHANNEL_ID_KEY);
+        if (mChannelID == null) throw new RuntimeException("Channel ID cannot be null");
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO, PERMISSION_REQ_ID_RECORD_AUDIO) && checkSelfPermission(Manifest.permission.CAMERA, PERMISSION_REQ_ID_CAMERA)) {
             initAgoraEngineAndJoinChannel();
         }
@@ -193,6 +228,14 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+            mRtcEngine.enableDualStreamMode(true);
+
+            String logsPath = Environment.getExternalStorageDirectory().toString()+ "/" + getPackageName()+"/";
+            File logsDir = new File(logsPath);
+            logsDir.mkdirs();
+            mRtcEngine.setLogFile(logsPath);
+            Log.e(LOG_TAG, "Log Path = " + logsPath);
+
         } catch (Exception e) {
             Log.e(LOG_TAG, Log.getStackTraceString(e));
             throw new RuntimeException("NEED TO check rtc sdk init fatal error\n" + Log.getStackTraceString(e));
@@ -216,7 +259,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
 
     // Tutorial Step 4
     private void joinChannel() {
-        mRtcEngine.joinChannel(null, "practotest123", "Extra Optional Data", 0); // if you do not specify the uid, we will generate the uid for you
+        mRtcEngine.joinChannel(null, mChannelID, "Extra Optional Data", 0); // if you do not specify the uid, we will generate the uid for you
     }
 
     // Tutorial Step 5

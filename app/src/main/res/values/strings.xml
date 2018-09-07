@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Agora1to1</string>
+    <string name="app_name">Agora Preview</string>
 
     <!-- PLEASE KEEP THIS App ID IN SAFE PLACE -->
     <!-- Get your own App ID at https://dashboard.agora.io/ -->
@@ -7,5 +7,6 @@
     <!-- For formal released project, please use Dynamic Key
         http://docs.agora.io/en/user_guide/Component_and_Others/Dynamic_Key_User_Guide.html -->
     <!-- Tutorial Step 1 -->
-    <string name="agora_app_id"><#YOUR APP ID#></string>
+    <!--<string name="agora_app_id"><#YOUR APP ID#></string>-->
+    <string name="agora_app_id">8f21e10a5cbb43978675c509daca777e</string>
 </resources>
