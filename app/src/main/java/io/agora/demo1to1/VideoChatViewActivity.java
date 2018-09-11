@@ -131,26 +131,42 @@ public class VideoChatViewActivity extends AppCompatActivity {
                 }
             });
         }
+
+        @Override
+        public void onLastmileQuality(final int quality) {
+            super.onLastmileQuality(quality);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.i(LOG_TAG, "onLastmileQuality " +getReadableQuality(quality));
+                }
+            });
+        }
+
+        @Override
+        public void onRtcStats(RtcStats stats) {
+            super.onRtcStats(stats);
+        }
     };
 
     public static String getReadableQuality(int value) {
         switch (value) {
             case 0:
-                return "Quality Unknown";
+                return "Unknown";
             case 1:
-                return "Quality Excellent";
+                return "Excellent";
             case 2:
-                return "Quality Good";
+                return "Good";
             case 3:
-                return "Quality Poor";
+                return "Poor";
             case 4:
-                return "Quality Bad";
+                return "Bad";
             case 5:
-                return "Quality Very Bad";
+                return "Very Bad";
             case 6:
-                return "Quality Down";
+                return "Down";
             default:
-                return "Quality Unknown";
+                return "Unknown";
         }
     }
 
@@ -278,13 +294,13 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+            mRtcEngine.enableLastmileTest();
             mRtcEngine.setParameters("{\"extSmoothMode\": true}");
 
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
             sdkLogDir.mkdirs();
             mRtcEngine.setLogFile(sdkLogPath);
-            mRtcEngine.setParameters("extSmoothMode");
             Log.e(LOG_TAG, "SDK_log_path = " + sdkLogPath);
 
 
