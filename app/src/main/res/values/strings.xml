@@ -1,4 +1,5 @@
 <resources>
+    <!--Make sure to refresh Gradle when you change the branch-->
     <string name="app_name">Agora Preview</string>
 
     <!-- PLEASE KEEP THIS App ID IN SAFE PLACE -->

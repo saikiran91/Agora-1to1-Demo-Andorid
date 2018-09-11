@@ -32,3 +32,4 @@ dependencies {
 
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+//Make sure to refresh Gradle when you change the branch

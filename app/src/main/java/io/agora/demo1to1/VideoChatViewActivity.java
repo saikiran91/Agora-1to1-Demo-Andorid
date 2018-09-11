@@ -131,6 +131,17 @@ public class VideoChatViewActivity extends AppCompatActivity {
                 }
             });
         }
+
+        @Override
+        public void onLastmileQuality(final int quality) {
+            super.onLastmileQuality(quality);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d("onLastmileQuality", getReadableQuality(quality));
+                }
+            });
+        }
     };
 
     public static String getReadableQuality(int value) {
@@ -278,6 +289,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+            mRtcEngine.enableLastmileTest();
 
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
@@ -299,7 +311,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 2
     private void setupVideoProfile() {
         mRtcEngine.enableVideo();
-        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);
+        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_180P, false);
     }
 
     // Tutorial Step 3
