@@ -82,7 +82,6 @@ public class VideoChatViewActivity extends AppCompatActivity {
         @Override
         public void onRemoteVideoStats(final RemoteVideoStats stats) {
             super.onRemoteVideoStats(stats);
-
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -101,8 +100,59 @@ public class VideoChatViewActivity extends AppCompatActivity {
 
         }
 
+        @Override
+        public void onLocalVideoStats(final LocalVideoStats stats) {
+            super.onLocalVideoStats(stats);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    String details = "Res: na" + "\n" +
+                            "Bitrate: " + stats.sentBitrate + "\n" +
+                            "FrameRate: " + stats.sentFrameRate;
+                    TextView detailsTv = findViewById(R.id.local_detail_tv);
+                    detailsTv.setVisibility(View.VISIBLE);
+                    detailsTv.setText(details);
+                }
+            });
+        }
 
+        @Override
+        public void onNetworkQuality(int uid, final int txQuality, final int rxQuality) {
+            super.onNetworkQuality(uid, txQuality, rxQuality);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    String details =
+                            "Uplink: " + getReadableQuality(txQuality) +
+                                    " Downlink: " + getReadableQuality(rxQuality);
+                    TextView detailsTv = findViewById(R.id.network_detail_tv);
+                    detailsTv.setVisibility(View.VISIBLE);
+                    detailsTv.setText(details);
+                }
+            });
+        }
     };
+
+    public static String getReadableQuality(int value) {
+        switch (value) {
+            case 0:
+                return "Quality Unknown";
+            case 1:
+                return "Quality Excellent";
+            case 2:
+                return "Quality Good";
+            case 3:
+                return "Quality Poor";
+            case 4:
+                return "Quality Bad";
+            case 5:
+                return "Quality Very Bad";
+            case 6:
+                return "Quality Down";
+            default:
+                return "Quality Unknown";
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -228,13 +278,17 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+
+            String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
+            File sdkLogDir = new File(sdkLogPath);
+            sdkLogDir.mkdirs();
+            mRtcEngine.setLogFile(sdkLogPath);
+            mRtcEngine.setParameters("extSmoothMode");
+            Log.e(LOG_TAG, "SDK_log_path = " + sdkLogPath);
+
+
             mRtcEngine.enableDualStreamMode(true);
 
-            String logsPath = Environment.getExternalStorageDirectory().toString()+ "/" + getPackageName()+"/";
-            File logsDir = new File(logsPath);
-            logsDir.mkdirs();
-            mRtcEngine.setLogFile(logsPath);
-            Log.e(LOG_TAG, "Log Path = " + logsPath);
 
         } catch (Exception e) {
             Log.e(LOG_TAG, Log.getStackTraceString(e));
