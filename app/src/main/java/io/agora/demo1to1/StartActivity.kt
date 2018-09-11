@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.Toast
 import io.agora.demo1to1.VideoChatViewActivity.CHANNEL_ID_KEY
+import io.agora.specialdemo1to1.R
 import kotlinx.android.synthetic.main.activity_start.*
 import java.util.*
 

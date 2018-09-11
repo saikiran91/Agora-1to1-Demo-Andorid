@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.agora.demo1to1">
+    package="io.agora.specialdemo1to1">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -17,7 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".VideoChatViewActivity"
+            android:name="io.agora.demo1to1.VideoChatViewActivity"
             android:screenOrientation="sensorPortrait"
             android:theme="@style/FullScreenVideoTheme">
             <intent-filter>
@@ -26,7 +26,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <activity android:name=".StartActivity">
+        <activity android:name="io.agora.demo1to1.StartActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

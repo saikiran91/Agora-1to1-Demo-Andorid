@@ -23,6 +23,7 @@ import io.agora.rtc.Constants;
 import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
 import io.agora.rtc.video.VideoCanvas;
+import io.agora.specialdemo1to1.R;
 
 public class VideoChatViewActivity extends AppCompatActivity {
 
@@ -106,7 +107,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    String details = "Res: na" + "\n" +
+                    String details = "Res: 180p" + "\n" +
                             "Bitrate: " + stats.sentBitrate + "\n" +
                             "FrameRate: " + stats.sentFrameRate;
                     TextView detailsTv = findViewById(R.id.local_detail_tv);
@@ -278,6 +279,8 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+            mRtcEngine.setParameters("{\"extSmoothMode\": true}");
+            mRtcEngine.setVideoProfile(IRtcEngineEventHandler.VideoProfile.VIDEO_PROFILE_180P, false);
 
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
