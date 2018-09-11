@@ -19,7 +19,6 @@ import android.widget.Toast;
 
 import java.io.File;
 
-import io.agora.rtc.Constants;
 import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
 import io.agora.rtc.video.VideoCanvas;
@@ -280,7 +279,6 @@ public class VideoChatViewActivity extends AppCompatActivity {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
             mRtcEngine.setParameters("{\"extSmoothMode\": true}");
-            mRtcEngine.setVideoProfile(IRtcEngineEventHandler.VideoProfile.VIDEO_PROFILE_180P, false);
 
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
@@ -302,7 +300,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 2
     private void setupVideoProfile() {
         mRtcEngine.enableVideo();
-        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);
+        mRtcEngine.setVideoProfile(IRtcEngineEventHandler.VideoProfile.VIDEO_PROFILE_180P, false);
     }
 
     // Tutorial Step 3

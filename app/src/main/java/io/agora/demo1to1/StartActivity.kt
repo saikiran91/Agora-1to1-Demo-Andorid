@@ -31,8 +31,9 @@ class StartActivity : AppCompatActivity() {
 
 
     fun generateRandomOnClick(view: View) {
-        val randomText = UUID.randomUUID().toString()
+        val randomText = UUID.randomUUID().toString().replace("-", "").trim().substring(0, 6)
         channel_et.setText(randomText)
+        channel_et.setSelection(channel_et.text.length);
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         val clip = android.content.ClipData.newPlainText("Channel ID", randomText)
         clipboard.primaryClip = clip
