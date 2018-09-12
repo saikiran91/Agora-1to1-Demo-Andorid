@@ -2,3 +2,4 @@
 /src/main/res/values/strings.xml
 *.jar
 *.so
+*.h

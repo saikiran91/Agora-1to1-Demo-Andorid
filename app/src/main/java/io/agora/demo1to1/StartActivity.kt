@@ -29,7 +29,6 @@ class StartActivity : AppCompatActivity() {
         }
     }
 
-
     fun generateRandomOnClick(view: View) {
         val randomText = UUID.randomUUID().toString().replace("-", "").trim().substring(0, 6)
         channel_et.setText(randomText)
