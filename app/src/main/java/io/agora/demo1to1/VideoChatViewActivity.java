@@ -26,7 +26,6 @@ import io.agora.rtc.video.VideoEncoderConfiguration;
 
 import static io.agora.rtc.video.VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_30;
 import static io.agora.rtc.video.VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE;
-import static io.agora.rtc.video.VideoEncoderConfiguration.STANDARD_BITRATE;
 import static io.agora.rtc.video.VideoEncoderConfiguration.VD_320x180;
 
 public class VideoChatViewActivity extends AppCompatActivity {
@@ -38,6 +37,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
 
     private static final int PERMISSION_REQ_ID_RECORD_AUDIO = 22;
     private static final int PERMISSION_REQ_ID_CAMERA = PERMISSION_REQ_ID_RECORD_AUDIO + 1;
+    private boolean mShowInfo = true;
 
     private RtcEngine mRtcEngine;// Tutorial Step 1
     private final IRtcEngineEventHandler mRtcEventHandler = new IRtcEngineEventHandler() { // Tutorial Step 1
@@ -90,16 +90,18 @@ public class VideoChatViewActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    TextView detailsTv = findViewById(R.id.remote_detail_tv);
-                    detailsTv.setVisibility(View.VISIBLE);
-                    String details = "Res: " + stats.width + "w " + stats.height + "h" + "\n" +
-                            "Bitrate: " + stats.receivedBitrate + "\n" +
-                            "FrameRate: " + stats.receivedFrameRate + "\n" +
-                            "uid: " + stats.uid + "\n" +
-                            "delay: " + stats.delay + "\n" +
-                            "StreamType: " + stats.rxStreamType + "\n" +
-                            "Channel ID:" + mChannelID;
-                    detailsTv.setText(details);
+                    if (mShowInfo) {
+                        TextView detailsTv = findViewById(R.id.remote_detail_tv);
+                        detailsTv.setVisibility(View.VISIBLE);
+                        String details = "Res: " + stats.width + "w " + stats.height + "h" + "\n" +
+                                "Bitrate: " + stats.receivedBitrate + "\n" +
+                                "FrameRate: " + stats.receivedFrameRate + "\n" +
+                                "uid: " + stats.uid + "\n" +
+                                "delay: " + stats.delay + "\n" +
+                                "StreamType: " + stats.rxStreamType + "\n" +
+                                "Channel ID:" + mChannelID;
+                        detailsTv.setText(details);
+                    }
                 }
             });
 
@@ -111,12 +113,14 @@ public class VideoChatViewActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    String details = "Res: na" + "\n" +
-                            "Bitrate: " + stats.sentBitrate + "\n" +
-                            "FrameRate: " + stats.sentFrameRate;
-                    TextView detailsTv = findViewById(R.id.local_detail_tv);
-                    detailsTv.setVisibility(View.VISIBLE);
-                    detailsTv.setText(details);
+                    if (mShowInfo) {
+                        TextView detailsTv = findViewById(R.id.local_detail_tv);
+                        detailsTv.setVisibility(View.VISIBLE);
+                        String details = "Res: Na" + "\n" +
+                                "Bitrate: " + stats.sentBitrate + "\n" +
+                                "FrameRate: " + stats.sentFrameRate;
+                        detailsTv.setText(details);
+                    }
                 }
             });
         }
@@ -127,23 +131,15 @@ public class VideoChatViewActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    String details =
-                            "Uplink: " + getReadableQuality(txQuality) +
-                                    " Downlink: " + getReadableQuality(rxQuality);
-                    TextView detailsTv = findViewById(R.id.network_detail_tv);
-                    detailsTv.setVisibility(View.VISIBLE);
-                    detailsTv.setText(details);
-                }
-            });
-        }
 
-        @Override
-        public void onLastmileQuality(final int quality) {
-            super.onLastmileQuality(quality);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Log.d("onLastmileQuality", getReadableQuality(quality));
+                    if (mShowInfo) {
+                        TextView detailsTv = findViewById(R.id.network_detail_tv);
+                        detailsTv.setVisibility(View.VISIBLE);
+                        String details =
+                                "Uplink: " + getReadableQuality(txQuality) +
+                                        " Downlink: " + getReadableQuality(rxQuality);
+                        detailsTv.setText(details);
+                    }
                 }
             });
         }
@@ -294,19 +290,12 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
-//            mRtcEngine.enableLastmileTest();
-
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
             sdkLogDir.mkdirs();
             mRtcEngine.setLogFile(sdkLogPath);
-            mRtcEngine.setParameters("extSmoothMode");
             Log.e(LOG_TAG, "SDK_log_path = " + sdkLogPath);
-
-
             mRtcEngine.enableDualStreamMode(true);
-
-
         } catch (Exception e) {
             Log.e(LOG_TAG, Log.getStackTraceString(e));
             throw new RuntimeException("NEED TO check rtc sdk init fatal error\n" + Log.getStackTraceString(e));
@@ -320,7 +309,6 @@ public class VideoChatViewActivity extends AppCompatActivity {
         VideoEncoderConfiguration config = new VideoEncoderConfiguration(VD_320x180, FRAME_RATE_FPS_30, 1024, ORIENTATION_MODE_ADAPTIVE);
         mRtcEngine.setVideoEncoderConfiguration(config);
 //        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);ok
-
     }
 
     // Tutorial Step 3
@@ -378,5 +366,13 @@ public class VideoChatViewActivity extends AppCompatActivity {
         if (tag != null && (Integer) tag == uid) {
             surfaceView.setVisibility(muted ? View.GONE : View.VISIBLE);
         }
+    }
+
+    public void onInfoButtonClicked(View view) {
+        int visibility = mShowInfo ? View.GONE : View.VISIBLE;
+        findViewById(R.id.network_detail_tv).setVisibility(visibility);
+        findViewById(R.id.local_detail_tv).setVisibility(visibility);
+        findViewById(R.id.remote_detail_tv).setVisibility(visibility);
+        mShowInfo = !mShowInfo;
     }
 }
