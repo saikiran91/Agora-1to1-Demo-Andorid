@@ -19,10 +19,15 @@ import android.widget.Toast;
 
 import java.io.File;
 
-import io.agora.rtc.Constants;
 import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
 import io.agora.rtc.video.VideoCanvas;
+import io.agora.rtc.video.VideoEncoderConfiguration;
+
+import static io.agora.rtc.video.VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_30;
+import static io.agora.rtc.video.VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE;
+import static io.agora.rtc.video.VideoEncoderConfiguration.STANDARD_BITRATE;
+import static io.agora.rtc.video.VideoEncoderConfiguration.VD_320x180;
 
 public class VideoChatViewActivity extends AppCompatActivity {
 
@@ -147,21 +152,21 @@ public class VideoChatViewActivity extends AppCompatActivity {
     public static String getReadableQuality(int value) {
         switch (value) {
             case 0:
-                return "Quality Unknown";
+                return "Unknown";
             case 1:
-                return "Quality Excellent";
+                return "Excellent";
             case 2:
-                return "Quality Good";
+                return "Good";
             case 3:
-                return "Quality Poor";
+                return "Poor";
             case 4:
-                return "Quality Bad";
+                return "Bad";
             case 5:
-                return "Quality Very Bad";
+                return "Very Bad";
             case 6:
-                return "Quality Down";
+                return "Down";
             default:
-                return "Quality Unknown";
+                return "Unknown";
         }
     }
 
@@ -289,7 +294,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
-            mRtcEngine.enableLastmileTest();
+//            mRtcEngine.enableLastmileTest();
 
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
@@ -311,7 +316,11 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 2
     private void setupVideoProfile() {
         mRtcEngine.enableVideo();
-        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_180P, false);
+//        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);
+        VideoEncoderConfiguration config = new VideoEncoderConfiguration(VD_320x180, FRAME_RATE_FPS_30, 1024, ORIENTATION_MODE_ADAPTIVE);
+        mRtcEngine.setVideoEncoderConfiguration(config);
+//        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);ok
+
     }
 
     // Tutorial Step 3
