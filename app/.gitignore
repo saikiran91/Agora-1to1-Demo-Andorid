@@ -1,2 +1,4 @@
 /build
 /src/main/res/values/strings.xml
+*.so
+*.jar
