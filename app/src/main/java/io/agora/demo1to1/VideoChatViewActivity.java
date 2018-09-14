@@ -1,6 +1,7 @@
 package io.agora.demo1to1;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -9,35 +10,53 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.File;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
+import java.io.File;
+import java.util.Date;
+import java.util.UUID;
+
+import io.agora.AgoraAPIOnlySignal;
+import io.agora.rtc.Constants;
 import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
 import io.agora.rtc.video.VideoCanvas;
 import io.agora.rtc.video.VideoEncoderConfiguration;
 
-import static io.agora.rtc.video.VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_30;
+import static io.agora.rtc.video.VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_24;
 import static io.agora.rtc.video.VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE;
-import static io.agora.rtc.video.VideoEncoderConfiguration.VD_320x180;
+import static io.agora.rtc.video.VideoEncoderConfiguration.STANDARD_BITRATE;
+import static io.agora.rtc.video.VideoEncoderConfiguration.VD_640x360;
 
 public class VideoChatViewActivity extends AppCompatActivity {
 
     private static final String LOG_TAG = VideoChatViewActivity.class.getSimpleName();
     public static final String CHANNEL_ID_KEY = "CHANNEL_ID_KEY";
+    public static final String CLIENT_TYPE = "CLIENT_TYPE";
+    public static final String USER_NAME = "USER_NAME";
     private String mChannelID;
-
+    private String mUserName;
+    private int mClientType;
+    private AgoraAPIOnlySignal mSignaling;
+    private Gson mGson = new GsonBuilder().setPrettyPrinting().create();
+    private ChatAdapter mChatAdapter;
 
     private static final int PERMISSION_REQ_ID_RECORD_AUDIO = 22;
     private static final int PERMISSION_REQ_ID_CAMERA = PERMISSION_REQ_ID_RECORD_AUDIO + 1;
-    private boolean mShowInfo = true;
+    private boolean mShowInfo = false;
 
     private RtcEngine mRtcEngine;// Tutorial Step 1
     private final IRtcEngineEventHandler mRtcEventHandler = new IRtcEngineEventHandler() { // Tutorial Step 1
@@ -57,9 +76,6 @@ public class VideoChatViewActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     onRemoteUserLeft();
-                    TextView detailsTv = findViewById(R.id.remote_detail_tv);
-                    detailsTv.setText("");
-                    detailsTv.setVisibility(View.GONE);
                 }
             });
         }
@@ -90,8 +106,8 @@ public class VideoChatViewActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (mShowInfo) {
-                        TextView detailsTv = findViewById(R.id.remote_detail_tv);
+                    if (mShowInfo && isAudience()) {
+                        TextView detailsTv = findViewById(R.id.video_detail_tv);
                         detailsTv.setVisibility(View.VISIBLE);
                         String details = "Res: " + stats.width + "w " + stats.height + "h" + "\n" +
                                 "Bitrate: " + stats.receivedBitrate + "\n" +
@@ -113,8 +129,8 @@ public class VideoChatViewActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (mShowInfo) {
-                        TextView detailsTv = findViewById(R.id.local_detail_tv);
+                    if (mShowInfo && isBroadcaster()) {
+                        TextView detailsTv = findViewById(R.id.video_detail_tv);
                         detailsTv.setVisibility(View.VISIBLE);
                         String details = "Res: Na" + "\n" +
                                 "Bitrate: " + stats.sentBitrate + "\n" +
@@ -124,56 +140,38 @@ public class VideoChatViewActivity extends AppCompatActivity {
                 }
             });
         }
-
-        @Override
-        public void onNetworkQuality(int uid, final int txQuality, final int rxQuality) {
-            super.onNetworkQuality(uid, txQuality, rxQuality);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-
-                    if (mShowInfo) {
-                        TextView detailsTv = findViewById(R.id.network_detail_tv);
-                        detailsTv.setVisibility(View.VISIBLE);
-                        String details =
-                                "Uplink: " + getReadableQuality(txQuality) +
-                                        " Downlink: " + getReadableQuality(rxQuality);
-                        detailsTv.setText(details);
-                    }
-                }
-            });
-        }
     };
-
-    public static String getReadableQuality(int value) {
-        switch (value) {
-            case 0:
-                return "Unknown";
-            case 1:
-                return "Excellent";
-            case 2:
-                return "Good";
-            case 3:
-                return "Poor";
-            case 4:
-                return "Bad";
-            case 5:
-                return "Very Bad";
-            case 6:
-                return "Down";
-            default:
-                return "Unknown";
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat_view);
         mChannelID = getIntent().getStringExtra(CHANNEL_ID_KEY);
+        mClientType = getIntent().getIntExtra(CLIENT_TYPE, Constants.CLIENT_ROLE_AUDIENCE);
+        mUserName = getIntent().getStringExtra(USER_NAME);
+        Log.d(LOG_TAG, "mChannelID = " + mChannelID +
+                " mClientType = " + mClientType + " mUserName = " + mUserName);
+        initUI();
         if (mChannelID == null) throw new RuntimeException("Channel ID cannot be null");
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO, PERMISSION_REQ_ID_RECORD_AUDIO) && checkSelfPermission(Manifest.permission.CAMERA, PERMISSION_REQ_ID_CAMERA)) {
             initAgoraEngineAndJoinChannel();
+        }
+
+
+        mChatAdapter = new ChatAdapter();
+        RecyclerView recyclerView = findViewById(R.id.chat_list);
+        LinearLayoutManager manager = new LinearLayoutManager(this);
+        manager.setStackFromEnd(true);
+
+        recyclerView.setLayoutManager(manager);
+        recyclerView.setAdapter(mChatAdapter.getAdapter());
+    }
+
+    private void initUI() {
+        if (isAudience()) {
+            findViewById(R.id.mute_video_btn).setVisibility(View.GONE);
+            findViewById(R.id.mute_audio_btn).setVisibility(View.GONE);
+            findViewById(R.id.switch_camera_btn).setVisibility(View.GONE);
         }
     }
 
@@ -182,7 +180,49 @@ public class VideoChatViewActivity extends AppCompatActivity {
         setupVideoProfile();         // Tutorial Step 2
         setupLocalVideo();           // Tutorial Step 3
         joinChannel();               // Tutorial Step 4
+        initSignaling();
     }
+
+    private void initSignaling() {
+        mSignaling = AgoraAPIOnlySignal.getInstance(this, getString(R.string.agora_app_id));
+        mSignaling.login2(getString(R.string.agora_app_id), String.valueOf(mUserName.hashCode()), "_no_need_token", 0, "", 5, 2);
+        mSignaling.callbackSet(signalCallback);
+    }
+
+    private SignalCallBack signalCallback = new SignalCallBack() {
+        @Override
+        public void onMessageChannelReceive(String channelID, String account, int uid, final String msg) {
+            super.onMessageChannelReceive(channelID, account, uid, msg);
+            Log.e(LOG_TAG, "onMessageChannelReceive message " + msg);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (msg != null) {
+                        try {
+                            Chat chat = mGson.fromJson(msg, Chat.class);
+                            mChatAdapter.getListOfChat().add(chat);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onLoginSuccess(int uid, int fd) {
+            super.onLoginSuccess(uid, fd);
+            Log.e(LOG_TAG, "Signaling onLoginSuccess ");
+            mSignaling.channelJoin(mChannelID);
+        }
+
+        @Override
+        public void onLoginFailed(int p0) {
+            super.onLoginFailed(p0);
+            Log.e(LOG_TAG, "Signaling onLoginFailed ");
+        }
+    };
+
 
     public boolean checkSelfPermission(String permission, int requestCode) {
         Log.i(LOG_TAG, "checkSelfPermission " + permission + " " + requestCode);
@@ -241,6 +281,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
         leaveChannel();
         RtcEngine.destroy();
         mRtcEngine = null;
+
     }
 
     // Tutorial Step 10
@@ -256,7 +297,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
 
         mRtcEngine.muteLocalVideoStream(iv.isSelected());
 
-        FrameLayout container = findViewById(R.id.local_video_view_container);
+        FrameLayout container = findViewById(R.id.video_view_container);
         SurfaceView surfaceView = (SurfaceView) container.getChildAt(0);
         surfaceView.setZOrderMediaOverlay(!iv.isSelected());
         surfaceView.setVisibility(iv.isSelected() ? View.GONE : View.VISIBLE);
@@ -290,12 +331,12 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+            mRtcEngine.setClientRole(mClientType);
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
             sdkLogDir.mkdirs();
             mRtcEngine.setLogFile(sdkLogPath);
             Log.e(LOG_TAG, "SDK_log_path = " + sdkLogPath);
-            mRtcEngine.enableDualStreamMode(true);
         } catch (Exception e) {
             Log.e(LOG_TAG, Log.getStackTraceString(e));
             throw new RuntimeException("NEED TO check rtc sdk init fatal error\n" + Log.getStackTraceString(e));
@@ -305,74 +346,111 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 2
     private void setupVideoProfile() {
         mRtcEngine.enableVideo();
-//        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);
-        VideoEncoderConfiguration config = new VideoEncoderConfiguration(VD_320x180, FRAME_RATE_FPS_30, 1024, ORIENTATION_MODE_ADAPTIVE);
+        VideoEncoderConfiguration config = new VideoEncoderConfiguration(
+                VD_640x360, FRAME_RATE_FPS_24,
+                STANDARD_BITRATE, ORIENTATION_MODE_ADAPTIVE);
         mRtcEngine.setVideoEncoderConfiguration(config);
-//        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);ok
     }
 
     // Tutorial Step 3
     private void setupLocalVideo() {
-        FrameLayout container = findViewById(R.id.local_video_view_container);
-        SurfaceView surfaceView = RtcEngine.CreateRendererView(getBaseContext());
-        surfaceView.setZOrderMediaOverlay(true);
-        container.addView(surfaceView);
-        mRtcEngine.setupLocalVideo(new VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, 0));
+        if (isBroadcaster()) {
+            FrameLayout container = findViewById(R.id.video_view_container);
+            SurfaceView surfaceView = RtcEngine.CreateRendererView(getBaseContext());
+            surfaceView.setZOrderMediaOverlay(true);
+            container.addView(surfaceView);
+            mRtcEngine.setupLocalVideo(new VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, 0));
+        }
     }
 
     // Tutorial Step 4
     private void joinChannel() {
+        if (isAudience()) mRtcEngine.muteLocalAudioStream(true);
         mRtcEngine.joinChannel(null, mChannelID, "Extra Optional Data", 0); // if you do not specify the uid, we will generate the uid for you
     }
 
     // Tutorial Step 5
     private void setupRemoteVideo(int uid) {
-        FrameLayout container = findViewById(R.id.remote_video_view_container);
+        if (isAudience()) {
+            FrameLayout container = findViewById(R.id.video_view_container);
 
-        if (container.getChildCount() >= 1) {
-            return;
+            if (container.getChildCount() >= 1) {
+                return;
+            }
+
+            SurfaceView surfaceView = RtcEngine.CreateRendererView(getBaseContext());
+            container.addView(surfaceView);
+            mRtcEngine.setupRemoteVideo(new VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_FIT, uid));
+
+            surfaceView.setTag(uid); // for mark purpose
         }
-
-        SurfaceView surfaceView = RtcEngine.CreateRendererView(getBaseContext());
-        container.addView(surfaceView);
-        mRtcEngine.setupRemoteVideo(new VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_FIT, uid));
-
-        surfaceView.setTag(uid); // for mark purpose
-        View tipMsg = findViewById(R.id.quick_tips_when_use_agora_sdk); // optional UI
-        tipMsg.setVisibility(View.GONE);
     }
 
     // Tutorial Step 6
     private void leaveChannel() {
         mRtcEngine.leaveChannel();
+        mSignaling.logout();
     }
 
     // Tutorial Step 7
     private void onRemoteUserLeft() {
-        FrameLayout container = findViewById(R.id.remote_video_view_container);
-        container.removeAllViews();
-
-        View tipMsg = findViewById(R.id.quick_tips_when_use_agora_sdk); // optional UI
-        tipMsg.setVisibility(View.VISIBLE);
+        if (isAudience()) {
+            FrameLayout container = findViewById(R.id.video_view_container);
+            container.removeAllViews();
+        }
     }
 
     // Tutorial Step 10
     private void onRemoteUserVideoMuted(int uid, boolean muted) {
-        FrameLayout container = findViewById(R.id.remote_video_view_container);
 
-        SurfaceView surfaceView = (SurfaceView) container.getChildAt(0);
+        if (isAudience()) {
+            FrameLayout container = findViewById(R.id.video_view_container);
 
-        Object tag = surfaceView.getTag();
-        if (tag != null && (Integer) tag == uid) {
-            surfaceView.setVisibility(muted ? View.GONE : View.VISIBLE);
+            SurfaceView surfaceView = (SurfaceView) container.getChildAt(0);
+
+            Object tag = surfaceView.getTag();
+            if (tag != null && (Integer) tag == uid) {
+                surfaceView.setVisibility(muted ? View.GONE : View.VISIBLE);
+            }
         }
     }
 
     public void onInfoButtonClicked(View view) {
         int visibility = mShowInfo ? View.GONE : View.VISIBLE;
-        findViewById(R.id.network_detail_tv).setVisibility(visibility);
-        findViewById(R.id.local_detail_tv).setVisibility(visibility);
-        findViewById(R.id.remote_detail_tv).setVisibility(visibility);
+        findViewById(R.id.video_detail_tv).setVisibility(visibility);
         mShowInfo = !mShowInfo;
+    }
+
+
+    public void onMessageSendClicked(View view) {
+        EditText chatEt = findViewById(R.id.chat_et);
+        String chatMessage = chatEt.getText().toString().trim();
+        if (!chatMessage.isEmpty()) {
+            String id = UUID.randomUUID().toString();
+            String msg = mGson.toJson(new Chat(id, chatMessage,
+                    String.valueOf(mUserName.hashCode()), mUserName,
+                    mChannelID, new Date().getTime()));
+            mSignaling.messageChannelSend(mChannelID, msg, id);
+
+            chatEt.getText().clear();
+            chatEt.clearFocus();
+            hideKeyboard(chatEt);
+        } else {
+            showLongToast("Cant send empty message");
+        }
+    }
+
+    private boolean isBroadcaster() {
+        return mClientType == Constants.CLIENT_ROLE_BROADCASTER;
+    }
+
+    private boolean isAudience() {
+        return mClientType == Constants.CLIENT_ROLE_AUDIENCE;
+    }
+
+    private void hideKeyboard(EditText chatEt) {
+        InputMethodManager input = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (input != null)
+            input.hideSoftInputFromWindow(chatEt.getApplicationWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
     }
 }
