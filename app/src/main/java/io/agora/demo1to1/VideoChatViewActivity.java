@@ -24,9 +24,11 @@ import io.agora.rtc.RtcEngine;
 import io.agora.rtc.video.VideoCanvas;
 import io.agora.rtc.video.VideoEncoderConfiguration;
 
-import static io.agora.rtc.video.VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_30;
+import static io.agora.rtc.video.VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_15;
 import static io.agora.rtc.video.VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE;
 import static io.agora.rtc.video.VideoEncoderConfiguration.VD_320x180;
+import static io.agora.rtc.video.VideoEncoderConfiguration.VD_320x240;
+import static io.agora.rtc.video.VideoEncoderConfiguration.VD_640x360;
 
 public class VideoChatViewActivity extends AppCompatActivity {
 
@@ -290,12 +292,12 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+            mRtcEngine.setParameters("{\"extSmoothMode\": true}");
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
             sdkLogDir.mkdirs();
             mRtcEngine.setLogFile(sdkLogPath);
             Log.e(LOG_TAG, "SDK_log_path = " + sdkLogPath);
-            mRtcEngine.enableDualStreamMode(true);
         } catch (Exception e) {
             Log.e(LOG_TAG, Log.getStackTraceString(e));
             throw new RuntimeException("NEED TO check rtc sdk init fatal error\n" + Log.getStackTraceString(e));
@@ -305,10 +307,10 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 2
     private void setupVideoProfile() {
         mRtcEngine.enableVideo();
-//        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);
-        VideoEncoderConfiguration config = new VideoEncoderConfiguration(VD_320x180, FRAME_RATE_FPS_30, 1024, ORIENTATION_MODE_ADAPTIVE);
+        VideoEncoderConfiguration.VideoDimensions dimensions = VD_320x180; // VD_320x240 or VD_640x360
+        VideoEncoderConfiguration config = new VideoEncoderConfiguration(dimensions, FRAME_RATE_FPS_15, 600, ORIENTATION_MODE_ADAPTIVE);
         mRtcEngine.setVideoEncoderConfiguration(config);
-//        mRtcEngine.setVideoProfile(Constants.VIDEO_PROFILE_360P, false);ok
+//        mRtcEngine.setVideoProfile(360,640,15,600);
     }
 
     // Tutorial Step 3
