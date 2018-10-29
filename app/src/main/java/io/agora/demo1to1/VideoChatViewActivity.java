@@ -37,10 +37,11 @@ import io.agora.rtc.video.VideoCanvas;
 import io.agora.rtc.video.VideoEncoderConfiguration;
 
 import static io.agora.rtc.video.VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_24;
-import static io.agora.rtc.video.VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_ADAPTIVE;
+import static io.agora.rtc.video.VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE;
 import static io.agora.rtc.video.VideoEncoderConfiguration.STANDARD_BITRATE;
 import static io.agora.rtc.video.VideoEncoderConfiguration.VD_640x360;
 
+@SuppressWarnings("ALL")
 public class VideoChatViewActivity extends AppCompatActivity {
 
     private static final String LOG_TAG = VideoChatViewActivity.class.getSimpleName();
@@ -80,6 +81,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
             });
         }
 
+
         @Override
         public void onUserMuteVideo(final int uid, final boolean muted) { // Tutorial Step 10
             runOnUiThread(new Runnable() {
@@ -100,7 +102,16 @@ public class VideoChatViewActivity extends AppCompatActivity {
             super.onUserEnableLocalVideo(uid, enabled);
         }
 
+
         @Override
+        public void onNetworkQuality(int uid, int txQuality, int rxQuality) {
+            super.onNetworkQuality(uid, txQuality, rxQuality);
+        }
+
+        @Override
+
+
+        
         public void onRemoteVideoStats(final RemoteVideoStats stats) {
             super.onRemoteVideoStats(stats);
             runOnUiThread(new Runnable() {
@@ -140,6 +151,19 @@ public class VideoChatViewActivity extends AppCompatActivity {
                 }
             });
         }
+
+        @Override
+        public void onUserJoined(int uid, int elapsed) {
+            super.onUserJoined(uid, elapsed);
+            Log.d(LOG_TAG, "onUserJoined = " + uid);
+        }
+
+        @Override
+        public void onVideoStopped() {
+            super.onVideoStopped();
+            Log.d(LOG_TAG, "onVideoStopped = ");
+
+        }
     };
 
     @Override
@@ -156,7 +180,6 @@ public class VideoChatViewActivity extends AppCompatActivity {
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO, PERMISSION_REQ_ID_RECORD_AUDIO) && checkSelfPermission(Manifest.permission.CAMERA, PERMISSION_REQ_ID_CAMERA)) {
             initAgoraEngineAndJoinChannel();
         }
-
 
         mChatAdapter = new ChatAdapter();
         RecyclerView recyclerView = findViewById(R.id.chat_list);
@@ -331,6 +354,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
     private void initializeAgoraEngine() {
         try {
             mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
+            mRtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING);
             mRtcEngine.setClientRole(mClientType);
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
@@ -346,10 +370,13 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 2
     private void setupVideoProfile() {
         mRtcEngine.enableVideo();
-        VideoEncoderConfiguration config = new VideoEncoderConfiguration(
-                VD_640x360, FRAME_RATE_FPS_24,
-                STANDARD_BITRATE, ORIENTATION_MODE_ADAPTIVE);
-        mRtcEngine.setVideoEncoderConfiguration(config);
+        if (isBroadcaster()) {
+            VideoEncoderConfiguration config = new VideoEncoderConfiguration(
+                    VD_640x360, FRAME_RATE_FPS_24,
+                    STANDARD_BITRATE, ORIENTATION_MODE_FIXED_LANDSCAPE);
+            mRtcEngine.setVideoEncoderConfiguration(config);
+        }
+
     }
 
     // Tutorial Step 3
