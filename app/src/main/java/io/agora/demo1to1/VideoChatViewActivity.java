@@ -29,12 +29,15 @@ import static io.agora.rtc.video.VideoEncoderConfiguration.ORIENTATION_MODE.ORIE
 import static io.agora.rtc.video.VideoEncoderConfiguration.VD_320x180;
 import static io.agora.rtc.video.VideoEncoderConfiguration.VD_320x240;
 import static io.agora.rtc.video.VideoEncoderConfiguration.VD_640x360;
+import static io.agora.rtc.video.VideoEncoderConfiguration.VD_640x480;
 
 public class VideoChatViewActivity extends AppCompatActivity {
 
     private static final String LOG_TAG = VideoChatViewActivity.class.getSimpleName();
+    public static final String APP_ID_KEY = "APP_ID_KEY";
     public static final String CHANNEL_ID_KEY = "CHANNEL_ID_KEY";
     private String mChannelID;
+    private String mAppID;
 
 
     private static final int PERMISSION_REQ_ID_RECORD_AUDIO = 22;
@@ -173,7 +176,9 @@ public class VideoChatViewActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_chat_view);
         mChannelID = getIntent().getStringExtra(CHANNEL_ID_KEY);
-        if (mChannelID == null) throw new RuntimeException("Channel ID cannot be null");
+        mAppID = getIntent().getStringExtra(APP_ID_KEY);
+        if (mChannelID == null || mAppID == null)
+            throw new RuntimeException("Channel ID or App id cannot be null appid = " + mAppID + "channelid = " + mChannelID);
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO, PERMISSION_REQ_ID_RECORD_AUDIO) && checkSelfPermission(Manifest.permission.CAMERA, PERMISSION_REQ_ID_CAMERA)) {
             initAgoraEngineAndJoinChannel();
         }
@@ -291,8 +296,8 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 1
     private void initializeAgoraEngine() {
         try {
-            mRtcEngine = RtcEngine.create(getBaseContext(), getString(R.string.agora_app_id), mRtcEventHandler);
-            mRtcEngine.setParameters("{\"extSmoothMode\": true}");
+            mRtcEngine = RtcEngine.create(getBaseContext(), mAppID, mRtcEventHandler);
+//            mRtcEngine.setParameters("{\"extSmoothMode\": true}");
             String sdkLogPath = Environment.getExternalStorageDirectory().toString() + "/" + getPackageName() + "/";
             File sdkLogDir = new File(sdkLogPath);
             sdkLogDir.mkdirs();
@@ -307,8 +312,7 @@ public class VideoChatViewActivity extends AppCompatActivity {
     // Tutorial Step 2
     private void setupVideoProfile() {
         mRtcEngine.enableVideo();
-        VideoEncoderConfiguration.VideoDimensions dimensions = VD_320x180; // VD_320x240 or VD_640x360
-        VideoEncoderConfiguration config = new VideoEncoderConfiguration(dimensions, FRAME_RATE_FPS_15, 600, ORIENTATION_MODE_ADAPTIVE);
+        VideoEncoderConfiguration config = new VideoEncoderConfiguration(VD_640x480, FRAME_RATE_FPS_15, 600, ORIENTATION_MODE_ADAPTIVE);
         mRtcEngine.setVideoEncoderConfiguration(config);
 //        mRtcEngine.setVideoProfile(360,640,15,600);
     }

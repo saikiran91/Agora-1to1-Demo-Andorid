@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.Toast
+import io.agora.demo1to1.VideoChatViewActivity.APP_ID_KEY
 import io.agora.demo1to1.VideoChatViewActivity.CHANNEL_ID_KEY
 import kotlinx.android.synthetic.main.activity_start.*
 import java.util.*
@@ -19,13 +20,29 @@ class StartActivity : AppCompatActivity() {
     }
 
     fun joinChannelOnClick(view: View) {
-        val channelName = channel_et.text.toString()
-        if (channelName.isNotBlank()) {
-            startActivity(Intent(this,
-                    VideoChatViewActivity::class.java).apply { putExtra(CHANNEL_ID_KEY, channelName) })
-        } else {
-            Toast.makeText(this, "Channel ID cannot be empty", Toast.LENGTH_SHORT).show()
+        appid_et.setText(getString(R.string.agora_app_id))
+
+
+        val appId = appid_et.text.toString().apply {
+            if (isBlank()) {
+                Toast.makeText(this@StartActivity, "App ID cannot be empty", Toast.LENGTH_SHORT).show()
+                return
+            }
         }
+
+        val channelName = channel_et.text.toString().apply {
+            if (isBlank()) {
+                Toast.makeText(this@StartActivity, "Channel ID cannot be empty", Toast.LENGTH_SHORT).show()
+                return
+            }
+        }
+
+        startActivity(Intent(this, VideoChatViewActivity::class.java)
+                .apply {
+                    putExtra(CHANNEL_ID_KEY, channelName)
+                    putExtra(APP_ID_KEY, appId)
+                })
+
     }
 
 
