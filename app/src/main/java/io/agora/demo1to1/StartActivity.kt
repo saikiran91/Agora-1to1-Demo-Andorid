@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.Toast
 import io.agora.demo1to1.VideoChatViewActivity.APP_ID_KEY
 import io.agora.demo1to1.VideoChatViewActivity.CHANNEL_ID_KEY
+import io.agora.rtc.RtcEngine
 import kotlinx.android.synthetic.main.activity_start.*
 import java.util.*
 
@@ -17,10 +18,13 @@ class StartActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_start)
+        appid_et.setText(getString(R.string.agora_app_id))
+        val sdkVersion = "SDK V " + RtcEngine.getSdkVersion()
+        sdk_version_et.text = sdkVersion
+
     }
 
     fun joinChannelOnClick(view: View) {
-        appid_et.setText(getString(R.string.agora_app_id))
 
 
         val appId = appid_et.text.toString().apply {
@@ -49,7 +53,7 @@ class StartActivity : AppCompatActivity() {
     fun generateRandomOnClick(view: View) {
         val randomText = UUID.randomUUID().toString().replace("-", "").trim().substring(0, 6)
         channel_et.setText(randomText)
-        channel_et.setSelection(channel_et.text.length);
+        channel_et.setSelection(channel_et.text.length)
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
         val clip = android.content.ClipData.newPlainText("Channel ID", randomText)
         clipboard.primaryClip = clip
